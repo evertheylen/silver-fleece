@@ -1,4 +1,9 @@
-# golden-fleece changelog
+# silver-fleece changelog
+
+## 1.1
+
+Fork from [golden-fleece](https://github.com/Rich-Harris/golden-fleece) to silver-fleece, focussing just
+on JSON with comments.
 
 ## 1.0.9
 

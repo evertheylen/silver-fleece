@@ -6,14 +6,9 @@ export interface Node {
 
 export type Value = ObjectExpression | ArrayExpression | Literal;
 
-export interface Identifier extends Node {
-	type: 'Identifier';
-	name: string;
-}
-
 export interface Property extends Node {
 	type: 'Property';
-	key: Identifier | Literal;
+	key: Literal<string>;
 	value: Value;
 }
 
@@ -27,10 +22,11 @@ export interface ArrayExpression extends Node {
 	elements: Value[];
 }
 
-export interface Literal extends Node {
+type Primitive = string | number | boolean | null;
+export interface Literal<T extends Primitive = Primitive> extends Node {
 	type: 'Literal';
 	raw: string;
-	value: string | number | boolean | null;
+	value: T;
 	name?: string; // cheeky hack to allow object property code to always check `name`
 }
 
@@ -47,6 +43,5 @@ export interface ParserOptions {
 
 export interface StringifierOptions {
 	spaces?: number;
-	singleQuotes?: boolean;
 	compact?: boolean;
 }

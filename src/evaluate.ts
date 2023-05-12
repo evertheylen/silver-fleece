@@ -1,8 +1,8 @@
 import { parse } from './parse';
-import { Value, Property } from './interfaces';
+import { Value, Property, ParserOptions } from './interfaces';
 
-export function evaluate(str: string) {
-	const ast = parse(str);
+export function evaluate(str: string, opts?: ParserOptions) {
+	const ast = parse(str, opts);
 	return getValue(ast);
 }
 

@@ -1,18 +1,19 @@
-# golden-fleece
+# silver-fleece
 
-Parse a [JSON5](http://json5.org/) string (like JSON, but less strict).
+Forked from [golden-fleece](https://github.com/Rich-Harris/golden-fleece) but adjusted and
+simplified to parse normal JSON with comments. This makes it a bit faster, and the output will always
+be parsable by standard JSON parsers (comments are only added if you add them).
 
 ## Why?
 
-For the [Svelte REPL](https://svelte.technology/repl), where we want to allow arbitrary data in the bottom right-hand panel, but we also want to update the object without reformatting it as JSON.
-
+Patching files like `package.json` or `tsconfig.json`.
 
 ## Usage
 
-Install it with `npm install golden-fleece` and import it into your app:
+Install it with `npm install silver-fleece` and import it into your app:
 
 ```js
-import * as fleece from 'golden-fleece';
+import * as fleece from 'silver-fleece';
 ```
 
 ### fleece.parse(str, [options])
@@ -41,7 +42,7 @@ const ast = fleece.parse(str, {
 ### fleece.evaluate(str)
 
 ```js
-const { answer } = fleece.evaluate(`{ answer: 42 }`);
+const { answer } = fleece.evaluate(`{ "answer": 42 }`);
 answer === 42; // true
 ```
 
@@ -52,10 +53,10 @@ This is where it gets fun:
 
 ```js
 const str = `
-	number: 1,
-	string: 'yes',
-	object: { nested: true },
-	array: ['this', 'that', 'the other']
+	"number": 1,
+	"string": "yes",
+	"object": { "nested": true },
+	"array": ["this", "that", "the other"]
 `;
 
 const object = fleece.evaluate(str);
@@ -63,10 +64,10 @@ object.number = 42;
 object.array[2] = 'EVERYTHING';
 
 fleece.patch(str, object) === `{
-	number: 42,
-	string: 'yes',
-	object: { nested: true },
-	array: ['this', 'that', 'EVERYTHING']
+	"number": 42,
+	"string": "yes",
+	"object": { "nested": true },
+	"array": ["this", "that", "EVERYTHING"]
 }`; // true
 ```
 
@@ -84,9 +85,9 @@ const object = {
 };
 
 fleece.stringify(object) === `{
-	string: "hello",
+	"string": "hello",
 	"quoted-property": 2,
-	array: [
+	"array": [
 		3,
 		4
 	]
@@ -99,31 +100,18 @@ To indent with spaces instead of tabs, pass `spaces: n`, where `n` is the number
 fleece.stringify(object, {
 	spaces: 2
 }) === `{
-  string: "hello",
+  "string": "hello",
   "quoted-property": 2,
-  array: [
+  "array": [
     3,
     4
   ]
 }`; // true
 ```
 
-To prefer single-quotes to double-quotes, pass `singleQuotes: true`:
+## License and copyright
 
-```js
-fleece.stringify(object, {
-	singleQuotes: true
-}) === `{
-	string: 'hello',
-	'quoted-property': 2,
-	array: [
-		3,
-		4
-	]
-}`; // true
-```
+Original golden-fleece code is owned and copyrighted by [Rich Harris and other contributors](https://github.com/Rich-Harris/golden-fleece/graphs/contributors).
+They have released their contributions under the [LIL](LICENSE) license.
 
-
-## License
-
-[LIL](LICENSE)
+The silver-fleece changes are written by Evert Heylen and are also released under the same [LIL](LICENSE) license.

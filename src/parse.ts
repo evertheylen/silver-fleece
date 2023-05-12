@@ -1,28 +1,13 @@
-import {
-	number,
-	whitespace,
-	validIdentifierCharacters,
-	SINGLE_QUOTE,
-	DOUBLE_QUOTE
-} from './shared';
 import { locate } from 'locate-character';
 import {
-	ParserOptions,
-	Value,
-	ArrayExpression,
-	ObjectExpression,
-	Literal,
-	Property,
-	Identifier,
-	Comment
+	ArrayExpression, Comment, Literal, ObjectExpression, ParserOptions, Property, Value
 } from './interfaces';
+import { number, whitespace } from './shared';
 
 export function parse(str: string, opts?: ParserOptions) {
 	const parser = new Parser(str, opts);
 	return parser.value;
 }
-
-type ParserState = (parser: Parser) => (ParserState | void);
 
 function noop(){}
 
@@ -41,19 +26,6 @@ class ParseError extends Error {
 	}
 }
 
-// https://mathiasbynens.be/notes/javascript-escapes
-const escapeable: Record<string, string> = {
-	b: '\b',
-	n: '\n',
-	f: '\f',
-	r: '\r',
-	t: '\t',
-	v: '\v',
-	0: '\0'
-};
-
-const hex = /^[a-fA-F0-9]+$/;
-
 export default class Parser {
 	str: string;
 	index: number;
@@ -70,14 +42,14 @@ export default class Parser {
 		this.onValue = (opts && opts.onValue) || noop;
 
 		this.value = this.readValue();
-		this.allowWhitespaceOrComment();
+		this.readWhitespaceOrComment();
 
 		if (this.index < this.str.length) {
 			throw new Error(`Unexpected character '${this.peek()}'`)
 		}
 	}
 
-	allowWhitespaceOrComment() {
+	readWhitespaceOrComment() {
 		while (
 			this.index < this.str.length &&
 			whitespace.test(this.str[this.index])
@@ -119,11 +91,15 @@ export default class Parser {
 			return;
 		}
 
-		this.allowWhitespaceOrComment();
+		this.readWhitespaceOrComment();
 	}
 
 	error(message: string, index = this.index) {
 		const loc = locate(this.str, index, { offsetLine: 1 });
+		// console.debug(`Error ${message}:`);
+		// console.debug(`  string: ${this.str}`);
+		// console.debug(`          ` + ' '.repeat(this.index) + `^-- here (${this.str[this.index]})`)
+		// console.debug(`  around here `, this.str.slice(this.index-3, this.index+3));
 		throw new ParseError(message, index, loc);
 	}
 
@@ -181,15 +157,15 @@ export default class Parser {
 			elements: []
 		};
 
-		this.allowWhitespaceOrComment();
+		this.readWhitespaceOrComment();
 
 		while (this.peek() !== ']') {
 			array.elements.push(this.readValue());
-			this.allowWhitespaceOrComment();
+			this.readWhitespaceOrComment();
 
 			if (!this.eat(',')) break;
 
-			this.allowWhitespaceOrComment();
+			this.readWhitespaceOrComment();
 		}
 
 		if (!this.eat(']')) {
@@ -200,7 +176,7 @@ export default class Parser {
 		return array;
 	}
 
-	readBoolean(): Literal {
+	readBoolean(): Literal<boolean> {
 		const start = this.index;
 
 		const raw = this.read(/^(true|false)/);
@@ -216,7 +192,7 @@ export default class Parser {
 		}
 	}
 
-	readNull(): Literal {
+	readNull(): Literal<null> {
 		const start = this.index;
 
 		if (this.eat('null')) {
@@ -239,23 +215,18 @@ export default class Parser {
 		);
 	}
 
-	readNumber(): Literal {
+	readNumber(): Literal<number> {
 		const start = this.index;
 
 		const raw = this.read(number);
 
 		if (raw) {
-			const sign = raw[0];
-
-			let value = +(sign === '-' || sign === '+' ? raw.slice(1) : raw);
-			if (sign === '-') value = -value;
-
 			return {
 				start,
 				end: this.index,
 				type: 'Literal',
 				raw,
-				value
+				value: Number(raw)
 			};
 		}
 	}
@@ -272,15 +243,15 @@ export default class Parser {
 			properties: []
 		};
 
-		this.allowWhitespaceOrComment();
+		this.readWhitespaceOrComment();
 
 		while (this.peek() !== '}') {
 			object.properties.push(this.readProperty());
-			this.allowWhitespaceOrComment();
+			this.readWhitespaceOrComment();
 
 			if (!this.eat(',')) break;
 
-			this.allowWhitespaceOrComment();
+			this.readWhitespaceOrComment();
 		}
 
 		this.eat('}', true);
@@ -290,7 +261,7 @@ export default class Parser {
 	}
 
 	readProperty(): Property {
-		this.allowWhitespaceOrComment();
+		this.readWhitespaceOrComment();
 
 		const property: Property = {
 			start: this.index,
@@ -304,98 +275,48 @@ export default class Parser {
 		return property;
 	}
 
-	readIdentifier(): Identifier {
-		const start = this.index;
+	readPropertyKey(): Literal<string> {
+		const key = this.readString();
 
-		const name = this.read(validIdentifierCharacters);
-
-		if (name) {
-			return {
-				start,
-				end: this.index,
-				type: 'Identifier',
-				name
-			};
-		}
-	}
-
-	readPropertyKey(): Identifier | Literal {
-		const start = this.index;
-
-		const key = this.readString() || this.readIdentifier();
-
-		if (!key) this.error(`Bad identifier as unquoted key`);
+		if (!key) this.error(`Bad identifier`);
 
 		if (key.type === 'Literal') {
 			key.name = String(key.value);
 		}
 
-		this.allowWhitespaceOrComment();
+		this.readWhitespaceOrComment();
 		this.eat(':', true);
 
 		return key;
 	}
 
-	readString(): Literal {
+	readString(): Literal<string> {
 		const start = this.index;
 
-		// const quote = this.read(/^['"]/);
-		const quote = this.eat(SINGLE_QUOTE) || this.eat(DOUBLE_QUOTE);
+		const quote = this.eat('"');
 		if (!quote) return;
+		let end = this.str.indexOf('"', start+1);
 
-		let escaped = false;
-		let char: string;
-		let value: string = '';
-
-		while (this.index < this.str.length) {
-			const char = this.str[this.index++];
-
-			if (escaped) {
-				escaped = false;
-
-				// line continuations
-				if (char === '\n') continue;
-				if (char === '\r') {
-					if (this.str[this.index] === '\n') this.index += 1;
-					continue;
-				}
-
-				if (char === 'x' || char === 'u') {
-					const start = this.index;
-					const end = this.index += (char === 'x' ? 2 : 4);
-
-					const code = this.str.slice(start, end);
-					if (!hex.test(code)) this.error(`Invalid ${char === 'x' ? 'hexadecimal' : 'Unicode'} escape sequence`, start);
-
-					value += String.fromCharCode(parseInt(code, 16));
-				}
-
-				else {
-					value += escapeable[char] || char;
-				}
-			} else if (char === '\\') {
-				escaped = true;
-			} else if (char === quote) {
-				const end = this.index;
-
-				return {
-					start,
-					end,
-					type: 'Literal',
-					raw: this.str.slice(start, end),
-					value
-				};
-			} else {
-				if (char === '\n') this.error(`Bad string`, this.index - 1);
-				value += char;
-			}
+		while (end > 0 && this.str[end-1] === '\\') {
+			end = this.str.indexOf('"', end+1);
 		}
 
-		this.error(`Unexpected end of input`);
+		if (end === -1) this.error(`Unexpected end of input`);
+		end++;
+		this.index = end;
+		const raw = this.str.slice(start, end);
+
+		return {
+			start,
+			end,
+			type: 'Literal',
+			raw,
+			value: JSON.parse(raw)
+		};
 	}
 
 	readValue(): Value {
-		this.allowWhitespaceOrComment();
+		this.readWhitespaceOrComment();
 
 		const value = (
 			this.readArray() ||
@@ -408,6 +329,8 @@ export default class Parser {
 			return value;
 		}
 
+		// console.debug('string', this.str);
+		// console.debug("at pos", ' '.repeat(this.index) + '^   ', this.str[this.index]);
 		this.error(`Unexpected EOF`);
 	}
 }

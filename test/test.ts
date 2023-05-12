@@ -1,17 +1,10 @@
 import * as assert from 'assert';
 import * as fleece from '../src/index';
-import json5Tests from './json5';
 import {
-	Value,
-	ArrayExpression,
-	ObjectExpression,
-	Literal,
-	Property,
-	Identifier,
-	Comment
+	Comment, Value
 } from '../src/interfaces';
 
-describe('golden-fleece', () => {
+describe('silver-fleece', () => {
 	describe('parse', () => {
 		const tests: Array<{
 			solo?: boolean;
@@ -69,17 +62,6 @@ describe('golden-fleece', () => {
 
 			// strings
 			{
-				input: "'single-quotes'",
-				output: {
-					start: 0,
-					end: 15,
-					type: 'Literal',
-					raw: "'single-quotes'",
-					value: 'single-quotes'
-				}
-			},
-
-			{
 				input: '"double-quotes"',
 				output: {
 					start: 0,
@@ -102,46 +84,47 @@ describe('golden-fleece', () => {
 			},
 
 			{
-				input: `{ foo: 1, "bar": 2 }`,
+				input: `{ "foo": 1, "bar": 2 }`,
 				output: {
 					start: 0,
-					end: 20,
+					end: 22,
 					type: 'ObjectExpression',
 					properties: [
 						{
 							start: 2,
-							end: 8,
+							end: 10,
 							type: 'Property',
 							key: {
 								start: 2,
-								end: 5,
-								type: 'Identifier',
+								end: 7,
+								type: 'Literal',
+								raw: '"foo"',
+								value: 'foo',
 								name: 'foo'
 							},
 							value: {
-								start: 7,
-								end: 8,
+								start: 9,
+								end: 10,
 								type: 'Literal',
 								raw: '1',
 								value: 1
 							}
 						},
-
 						{
-							start: 10,
-							end: 18,
+							start: 12,
+							end: 20,
 							type: 'Property',
 							key: {
-								start: 10,
-								end: 15,
+								start: 12,
+								end: 17,
 								type: 'Literal',
 								raw: '"bar"',
 								value: 'bar',
 								name: 'bar'
 							},
 							value: {
-								start: 17,
-								end: 18,
+								start: 19,
+								end: 20,
 								type: 'Literal',
 								raw: '2',
 								value: 2
@@ -152,28 +135,30 @@ describe('golden-fleece', () => {
 			},
 
 			{
-				input: `{ array: [ true ] }`,
+				input: `{ "array": [ true ] }`,
 				output: {
 					start: 0,
-					end: 19,
+					end: 21,
 					type: 'ObjectExpression',
 					properties: [{
 						start: 2,
-						end: 17,
+						end: 19,
 						type: 'Property',
 						key: {
 							start: 2,
-							end: 7,
-							type: 'Identifier',
+							end: 9,
+							type: 'Literal',
+							raw: '"array"',
+							value: 'array',
 							name: 'array'
 						},
 						value: {
-							start: 9,
-							end: 17,
+							start: 11,
+							end: 19,
 							type: 'ArrayExpression',
 							elements: [{
-								start: 11,
-								end: 15,
+								start: 13,
+								end: 17,
 								type: 'Literal',
 								value: true,
 								raw: 'true'
@@ -264,12 +249,12 @@ describe('golden-fleece', () => {
 
 			{
 				input: `"\\xzz"`,
-				error: /Invalid hexadecimal escape sequence/
+				error: /Bad escaped character/
 			},
 
 			{
 				input: `"\\uzzzz"`,
-				error: /Invalid Unicode escape sequence/
+				error: /Bad Unicode escape/
 			}
 		];
 
@@ -304,7 +289,7 @@ describe('golden-fleece', () => {
 			},
 
 			{
-				input: `{ foo: 1, "bar": 2 }`,
+				input: `{ "foo": 1, "bar": 2 }`,
 				output: { foo: 1, bar: 2 }
 			},
 
@@ -314,53 +299,46 @@ describe('golden-fleece', () => {
 			},
 
 			{
-				input: `{ foo: 1, }`,
+				input: `{ "foo": 1, }`,
 				output: { foo: 1 }
 			},
 
 			{
-				// from http://json5.org/
-				input: `{
-					foo: 'bar',
-					while: true,
+				input: `{\n"foo": 123 //test \n}`,
+				output: {foo: 123}
+			},
 
-					this: 'is a \
-multi-line string',
+			{
+				input: `{
+					"foo": "bar",
+					"while": true,
 
 					// this is an inline comment
-					here: 'is another', // inline comment
+					"here": "is another", // inline comment
 
 					/* this is a block comment
 					that continues on another line */
 
-					hex: 0xDEADbeef,
-					half: .5,
-					delta: +10,
-					to: Infinity,   // and beyond!
+					"half": 0.5,
 
-					finally: 'a trailing comma',
-					oh: [
+					"finally": "a trailing comma",
+					"oh": [
 						"we shouldn't forget",
-						'arrays can have',
-						'trailing commas too',
+						"arrays can have",
+						"trailing commas too",
 					],
 				}`,
 				output: {
 					foo: 'bar',
 					while: true,
 
-					this: 'is a multi-line string',
-
 					// this is an inline comment
 					here: 'is another', // inline comment
 
 					/* this is a block comment
 					that continues on another line */
 
-					hex: 0xDEADbeef,
 					half: .5,
-					delta: +10,
-					to: Infinity,   // and beyond!
 
 					finally: 'a trailing comma',
 					oh: [
@@ -377,11 +355,6 @@ multi-line string',
 			},
 
 			{
-				input: `"a\\x42c"`,
-				output: 'aBc'
-			},
-
-			{
 				input: `"a\\u0042c"`,
 				output: 'aBc'
 			}
@@ -393,7 +366,7 @@ multi-line string',
 			const padded = input.split('\n').map(line => `      ${line}`).join('\n');
 
 			(test.solo ? it.only : test.skip ? it.skip : it)(`test ${i}\n${padded} `, () => {
-				const value = fleece.evaluate(input);
+				const value = fleece.evaluate(input)
 				assert.deepEqual(value, test.output);
 			});
 		});
@@ -414,55 +387,13 @@ multi-line string',
 			},
 
 			{
-				input: `0xa`,
-				value: 11,
-				output: `0xb`
-			},
-
-			{
-				input: `0b10`,
-				value: 7,
-				output: `0b111`
-			},
-
-			{
-				input: `+0Xa`,
-				value: 11,
-				output: `+0Xb`
-			},
-
-			{
-				input: `0b10`,
-				value: -7,
-				output: `-0b111`
-			},
-
-			{
-				input: `0o660`,
-				value: 504,
-				output: `0o770`
-			},
-
-			{
-				input: `+0x10`,
-				value: 0.5,
-				output: `+0.5`
-			},
-
-			{
-				input: `+10`,
-				value: 5,
-				output: `+5`
-			},
-
-			{
-				input: `-.5`,
+				input: `-0.5`,
 				value: -0.2,
-				output: `-.2`
+				output: `-0.2`
 			},
 
 			{
-				input: `.5`,
+				input: `0.5`,
 				value: 10,
 				output: '10'
 			},
@@ -477,12 +408,6 @@ multi-line string',
 				input: `  "x"  `,
 				value: 'y',
 				output: `  "y"  `
-			},
-
-			{
-				input: `  'x'  `,
-				value: 'y',
-				output: `  'y'  `
 			},
 
 			{
@@ -578,60 +503,38 @@ multi-line string',
 			},
 
 			{
-				input: `{ foo: 1 }`,
+				input: `{ "foo": 1 }`,
 				value: {},
 				output: `{}`
 			},
 
 			{
-				input: `{ foo: 1, bar: 2 }`,
+				input: `{ "foo": 1, "bar": 2 }`,
 				value: { bar: 3, foo: 4 },
-				output: `{ foo: 4, bar: 3 }`
+				output: `{ "foo": 4, "bar": 3 }`
 			},
 
 			{
-				input: `{ foo: 1, bar: 2 }`,
+				input: `{ "foo": 1, "bar": 2 }`,
 				value: { bar: 3, baz: 4 },
-				output: `{ bar: 3, baz: 4 }`
+				output: `{ "bar": 3, "baz": 4 }`
 			},
 
 			{
-				input: `{ foo: 1, bar: 2 }`,
+				input: `{ "foo": 1, "bar": 2 }`,
 				value: { foo: 3 },
-				output: `{ foo: 3 }`
+				output: `{ "foo": 3 }`
 			},
 
 			{
-				input: `{ foo: 1, bar: 2, baz: null }`,
+				input: `{ "foo": 1, "bar": 2, "baz": null }`,
 				value: { foo: 1, bar: 2, baz: { qux: 3 } },
-				output: `{ foo: 1, bar: 2, baz: { qux: 3 } }`
+				output: `{ "foo": 1, "bar": 2, "baz": { "qux": 3 } }`
 			},
 
 			{
 				input: `{
-					largeObject: {
-						one: 'thing',
-						two: 'thing',
-						red: 'thing',
-						blue: 'thing'
-					}
-				}`,
-				value: {
-					largeObject: { three: 'potato', four: 'potato', one: 'potato', two: 'potato' }
-				},
-				output: `{
-					largeObject: {
-						one: 'potato',
-						two: 'potato',
-						three: 'potato',
-						four: 'potato'
-					}
-				}`
-			},
-
-			{
-				input: `{
-					largeArray: [
+					"largeArray": [
 						1,
 						2,
 						[ 3, 4 ]
@@ -641,7 +544,7 @@ multi-line string',
 					largeArray: [5, 6, [7, 8]]
 				},
 				output: `{
-					largeArray: [
+					"largeArray": [
 						5,
 						6,
 						[ 7, 8 ]
@@ -651,7 +554,7 @@ multi-line string',
 
 			{
 				input: `{
-					foo: 1
+					"foo": 1
 				}`,
 				value: {
 					foo: 1,
@@ -660,27 +563,27 @@ multi-line string',
 					}
 				},
 				output: `{
-					foo: 1,
-					bar: {
-						x: 0,
-						y: 0
+					"foo": 1,
+					"bar": {
+						"x": 0,
+						"y": 0
 					}
 				}`
 			},
 
 			{
-				input: `{foo:'foo'}`,
+				input: `{"foo":"foo"}`,
 				value: { bar: 'bar' },
-				output: `{bar: 'bar'}`
+				output: `{"bar": "bar"}`
 			},
 
 			{
 				input: `{
-					foo: 'foo'
+					"foo": "foo"
 				}`,
 				value: { bar: 'bar' },
 				output: `{
-					bar: 'bar'
+					"bar": "bar"
 				}`
 			}
 		];
@@ -712,25 +615,7 @@ multi-line string',
 					foo: 1
 				},
 				output: `{
-					foo: 1
-				}`
-			},
-
-			{
-				input: {
-					'foo-bar': 1
-				},
-				output: `{
-					"foo-bar": 1
-				}`
-			},
-
-			{
-				input: {
-					'foo.bar': 1
-				},
-				output: `{
-					"foo.bar": 1
+					"foo": 1
 				}`
 			},
 
@@ -740,31 +625,13 @@ multi-line string',
 			},
 
 			{
-				input: '\n',
-				output: `'\\n'`,
-				singleQuotes: true
-			},
-
-			{
 				input: '"',
 				output: `"\\""`
 			},
 
 			{
-				input: '"',
-				output: `'"'`,
-				singleQuotes: true
-			},
-
-			{
 				input: "'",
 				output: `"'"`
-			},
-
-			{
-				input: "'",
-				output: `'\\''`,
-				singleQuotes: true
 			},
 
 			{
@@ -779,7 +646,7 @@ multi-line string',
 
 			{
 				input: `\u2028`,
-				output: `"\\u2028"`
+				output: `"\u2028"`
 			}
 		];
 
@@ -791,7 +658,6 @@ multi-line string',
 			(test.solo ? it.only : test.skip ? it.skip : it)(`test ${i}\n${padded} `, () => {
 				const stringified = fleece.stringify(test.input, {
 					spaces: test.spaces,
-					singleQuotes: test.singleQuotes
 				});
 
 				assert.equal(stringified, expected);
@@ -801,9 +667,5 @@ multi-line string',
 		it('should be cool with no options object passed in', () => {
 			fleece.stringify('foo');
 		})
-	});
-
-	describe('json5 compliance', () => {
-		json5Tests();
 	});
 });

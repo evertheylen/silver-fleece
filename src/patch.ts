@@ -1,11 +1,6 @@
 import { parse } from './parse';
-import {
-	stringify,
-	stringifyValue,
-	stringifyProperty,
-	stringifyString
-} from './stringify';
-import { whitespace, SINGLE_QUOTE, DOUBLE_QUOTE } from './shared';
+import { stringifyProperty, stringifyValue } from './stringify';
+import { whitespace } from './shared';
 import {
 	Value,
 	Property,
@@ -16,24 +11,10 @@ import {
 } from './interfaces';
 
 export function patch(str: string, value: any) {
-	const counts: Record<string, number> = {};
-	counts[SINGLE_QUOTE] = 0;
-	counts[DOUBLE_QUOTE] = 0;
-
 	const indentString: string = guessIndentString(str);
 
 	const comments: Comment[] = [];
-	const root: Value = parse(str, {
-		onValue: node => {
-			if (node.type === 'Literal' && typeof node.value === 'string') {
-				counts[node.raw[0]] += 1;
-			}
-		}
-	});
-
-	const quote = counts[SINGLE_QUOTE] > counts[DOUBLE_QUOTE] ?
-		SINGLE_QUOTE :
-		DOUBLE_QUOTE;
+	const root: Value = parse(str);
 
 	const newlines = (
 		/\n/.test(str.slice(root.start, root.end)) ||
@@ -43,7 +24,7 @@ export function patch(str: string, value: any) {
 
 	return (
 		str.slice(0, root.start) +
-		patchValue(root, value, str, '', indentString, quote, newlines) +
+		patchValue(root, value, str, '', indentString, newlines) +
 		str.slice(root.end)
 	);
 }
@@ -54,18 +35,12 @@ function patchValue(
 	str: string,
 	indentation: string,
 	indentString: string,
-	quote: string,
 	newlines: boolean
 ): string {
 	const type = typeof value;
 
 	if (type === 'string') {
-		if (node.type === 'Literal' && typeof node.value === 'string') {
-			// preserve quote style
-			return stringifyString(value, node.raw[0]);
-		}
-
-		return stringifyString(value, quote);
+		return JSON.stringify(value);
 	}
 
 	if (type === 'number') {
@@ -84,12 +59,11 @@ function patchValue(
 				str,
 				indentation,
 				indentString,
-				quote,
 				newlines
 			);
 		}
 
-		return stringifyValue(value, quote, indentation, indentString, newlines);
+		return stringifyValue(value, indentation, indentString, newlines);
 	}
 
 	if (type === 'object') {
@@ -100,41 +74,17 @@ function patchValue(
 				str,
 				indentation,
 				indentString,
-				quote,
 				newlines
 			);
 		}
 
-		return stringifyValue(value, quote, indentation, indentString, newlines);
+		return stringifyValue(value, indentation, indentString, newlines);
 	}
 
 	throw new Error(`Cannot stringify ${type}s`);
 }
 
 function patchNumber(raw: string, value: number) {
-	const matchRadix = /^([-+])?0([boxBOX])/.exec(raw);
-
-	if (matchRadix && value % 1 === 0) {
-		return (
-			(matchRadix[1] === '+' && value >= 0 ? '+' : value < 0 ? '-' : '') +
-			'0' + matchRadix[2] +
-			Math.abs(value).toString(
-				matchRadix[2] === 'b' || matchRadix[2] === 'B' ? 2 :
-				matchRadix[2] === 'o' || matchRadix[2] === 'O' ? 8 :
-				matchRadix[2] === 'x' || matchRadix[2] === 'X' ? 16 : null
-			)
-		);
-	}
-
-	const match = /^([-+])?(\.)?/.exec(raw);
-
-	if (match && match[0].length > 0) {
-		return (
-			(match[1] === '+' && value >= 0 ? '+' : value < 0 ? '-' : '') +
-			(match[2] ? String(Math.abs(value)).replace(/^0/, '') : String(Math.abs(value)))
-		);
-	}
-
 	return String(value);
 }
 
@@ -144,7 +94,6 @@ function patchArray(
 	str: string,
 	indentation: string,
 	indentString: string,
-	quote: string,
 	newlines: boolean
 ): string {
 	if (value.length === 0) {
@@ -156,7 +105,7 @@ function patchArray(
 	const newline = empty || /\n/.test(precedingWhitespace);
 
 	if (node.elements.length === 0) {
-		return stringifyValue(value, quote, indentation, indentString, newline);
+		return stringifyValue(value, indentation, indentString, newline);
 	}
 
 	let i = 0;
@@ -171,7 +120,7 @@ function patchArray(
 		if (element) {
 			patched +=
 				str.slice(c, element.start) +
-				patchValue(element, value[i], str, indentation, indentString, quote, newlinesInsideValue);
+				patchValue(element, value[i], str, indentation, indentString, newlinesInsideValue);
 
 			c = element.end;
 		} else {
@@ -179,11 +128,11 @@ function patchArray(
 			if (newlinesInsideValue) {
 				patched +=
 					`,\n${indentation + indentString}` +
-					stringifyValue(value[i], quote, indentation, indentString, true);
+					stringifyValue(value[i], indentation, indentString, true);
 			} else {
 				patched +=
 					`, ` +
-					stringifyValue(value[i], quote, indentation, indentString, false);
+					stringifyValue(value[i], indentation, indentString, false);
 			}
 		}
 	}
@@ -202,7 +151,6 @@ function patchObject(
 	str: string,
 	indentation: string,
 	indentString: string,
-	quote: string,
 	newlines: boolean
 ): string {
 	const keys = Object.keys(value);
@@ -223,7 +171,7 @@ function patchObject(
 	const newline = empty || /\n/.test(precedingWhitespace);
 
 	if (node.properties.length === 0) {
-		return stringifyValue(value, quote, indentation, indentString, newline);
+		return stringifyValue(value, indentation, indentString, newline);
 	}
 
 	let i = 0;
@@ -251,7 +199,6 @@ function patchObject(
 				str,
 				indentation,
 				indentString,
-				quote,
 				newlinesInsideValue
 			);
 
@@ -272,7 +219,6 @@ function patchObject(
 			stringifyProperty(
 				key,
 				propertyValue,
-				quote,
 				indentation,
 				indentString,
 				newlinesInsideValue
