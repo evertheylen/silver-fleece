@@ -373,9 +373,9 @@ function stringifyValue(value, indentation, indentString, newlines) {
             return stringifyValue(element, indentation + indentString, indentString, true);
         });
         if (newlines) {
-            return ("[\n".concat(indentation + indentString) +
-                elements.join(",\n".concat(indentation + indentString)) +
-                "\n".concat(indentation, "]"));
+            return ("[".concat(indentation + indentString) +
+                elements.join(",".concat(indentation + indentString)) +
+                "".concat(indentation, "]"));
         }
         return "[ ".concat(elements.join(', '), " ]");
     }
@@ -401,7 +401,7 @@ function patch(str, value) {
         root.type === 'ArrayExpression' && root.elements.length === 0 ||
         root.type === 'ObjectExpression' && root.properties.length === 0);
     return (str.slice(0, root.start) +
-        patchValue(root, value, str, '', indentString, newlines) +
+        patchValue(root, value, str, '\n', indentString, newlines) +
         str.slice(root.end));
 }
 function patchValue(node, value, str, indentation, indentString, newlines) {
@@ -458,7 +458,7 @@ function patchArray(node, value, str, indentation, indentString, newlines) {
             // append new element
             if (newlinesInsideValue) {
                 patched +=
-                    ",\n".concat(indentation + indentString) +
+                    ",".concat(indentation + indentString) +
                         stringifyValue(value[i], indentation, indentString, true);
             }
             else {
