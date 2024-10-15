@@ -24,7 +24,7 @@ export function patch(str: string, value: any) {
 
 	return (
 		str.slice(0, root.start) +
-		patchValue(root, value, str, '', indentString, newlines) +
+		patchValue(root, value, str, '\n', indentString, newlines) +
 		str.slice(root.end)
 	);
 }
@@ -127,7 +127,7 @@ function patchArray(
 			// append new element
 			if (newlinesInsideValue) {
 				patched +=
-					`,\n${indentation + indentString}` +
+					`,${indentation + indentString}` +
 					stringifyValue(value[i], indentation, indentString, true);
 			} else {
 				patched +=

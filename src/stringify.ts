@@ -40,9 +40,9 @@ export function stringifyValue(
 
 		if (newlines) {
 			return (
-				`[\n${indentation + indentString}` +
-				elements.join(`,\n${indentation + indentString}`) +
-				`\n${indentation}]`
+				`[${indentation + indentString}` +
+				elements.join(`,${indentation + indentString}`) +
+				`${indentation}]`
 			);
 		}
 
