@@ -647,7 +647,22 @@ describe('silver-fleece', () => {
 			{
 				input: `\u2028`,
 				output: `"\u2028"`
-			}
+			},
+
+			{
+				input: {
+					foo: [
+						"bar",
+						"baz"
+					]
+				},
+				output: `{
+					"foo": [
+						"bar",
+						"baz"
+					]
+				}`
+			},
 		];
 
 		tests.forEach((test, i) => {
