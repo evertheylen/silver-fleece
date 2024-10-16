@@ -4,14 +4,13 @@ import resolve from '@rollup/plugin-node-resolve';
 export default {
 	input: 'src/index.ts',
 	output: [
-		{ file: 'silver-fleece.umd.js', format: 'umd', name: 'fleece' },
-		{ file: 'silver-fleece.es.js', format: 'es' }
+		{ file: 'dist/silver-fleece.umd.js', format: 'umd', name: 'fleece' },
+		{ file: 'dist/silver-fleece.es.js', format: 'es' }
 	],
 	//name: 'fleece',
 	plugins: [
 		typescript({
-			declaration: true,
-			outDir: 'types',
+			tsconfig: "./tsconfig.json"
 		}),
 		resolve()
 	]

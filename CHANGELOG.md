@@ -1,5 +1,9 @@
 # silver-fleece changelog
 
+## 1.2
+
+Updated dependencies, fixed the long-standing bug around excess newlines (#1).
+
 ## 1.1
 
 Fork from [golden-fleece](https://github.com/Rich-Harris/golden-fleece) to silver-fleece, focussing just
