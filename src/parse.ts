@@ -1,8 +1,8 @@
-import { locate } from 'locate-character';
 import {
 	ArrayExpression, Comment, Literal, ObjectExpression, ParserOptions, Property, Value
 } from './interfaces';
 import { number, whitespace } from './shared';
+import { locate } from './locate';
 
 export function parse(str: string, opts?: ParserOptions) {
 	const parser = new Parser(str, opts);

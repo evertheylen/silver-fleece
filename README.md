@@ -114,4 +114,4 @@ fleece.stringify(object, {
 Original golden-fleece code is owned and copyrighted by [Rich Harris and other contributors](https://github.com/Rich-Harris/golden-fleece/graphs/contributors).
 They have released their contributions under the [LIL](LICENSE) license.
 
-The silver-fleece changes are written by Evert Heylen and are also released under the same [LIL](LICENSE) license.
+The silver-fleece changes are written by [Evert Heylen and other contributors](https://github.com/evertheylen/silver-fleece/graphs/contributors) and are also released under the same [LIL](LICENSE) license.
