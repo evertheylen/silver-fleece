@@ -1,10 +1,10 @@
 {
   "name": "silver-fleece",
   "description": "Parse and manipulate JSON strings",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "main": "dist/silver-fleece.umd.js",
-  "module": "dist/silver-fleece.es.js",
-  "types": "types/index.d.ts",
+  "module": "dist/silver-fleece.es.mjs",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "src"
@@ -29,6 +29,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/evertheylen/silver-fleece.git"
+    "url": "git+https://github.com/evertheylen/silver-fleece.git"
   }
 }
